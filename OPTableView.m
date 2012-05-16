@@ -24,8 +24,8 @@
 #import <objc/runtime.h>
 
 @interface OPTableView () <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, weak) NSObject<UITableViewDataSource> *realDataSource;
-@property (nonatomic, weak) NSObject<OPTableViewDelegate> *realDelegate;
+@property (nonatomic, weak) id<UITableViewDataSource> realDataSource;
+@property (nonatomic, weak) id<OPTableViewDelegate> realDelegate;
 @property (nonatomic, assign) BOOL dataSourceIsSelf;
 @property (nonatomic, assign) BOOL delegateIsSelf;
 
@@ -77,7 +77,7 @@
 #pragma mark -
 
 -(NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return [self.realDataSource tableView:tableView numberOfRowsInSection:section];
+    return [_realDataSource tableView:tableView numberOfRowsInSection:section];
 }
 
 -(UITableViewCell*) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -99,7 +99,7 @@
     previousOffset = self.contentOffset;
     
     // pass message to the delegate
-    if ([self.realDelegate respondsToSelector:@selector(scrollViewDidScroll:)])
+    if (! _delegateIsSelf && [self.realDelegate respondsToSelector:@selector(scrollViewDidScroll:)])
         [self.realDelegate scrollViewDidScroll:scrollView];
 }
 
@@ -107,7 +107,7 @@
     [self snapScrolling];
     
     // pass message to the delegate
-    if ([self.realDelegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)])
+    if (! _delegateIsSelf && [self.realDelegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)])
         [self.realDelegate scrollViewDidEndDecelerating:scrollView];
 }
 
@@ -115,7 +115,7 @@
     [self snapScrolling];
     
     // pass message to the delegate
-    if ([self.realDelegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)])
+    if (! _delegateIsSelf && [self.realDelegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)])
         [self.realDelegate scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
 }
 
@@ -123,7 +123,7 @@
     self.snappedIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
     
     // pass message to the delegate
-    if ([self.realDelegate respondsToSelector:@selector(scrollViewDidScrollToTop:)])
+    if (! _delegateIsSelf && [self.realDelegate respondsToSelector:@selector(scrollViewDidScrollToTop:)])
         [self.realDelegate scrollViewDidScrollToTop:scrollView];
 }
 
@@ -160,12 +160,12 @@
         return [super methodSignatureForSelector:aSelector];
     
     struct objc_method_description dataSourceMethod = protocol_getMethodDescription(@protocol(UITableViewDataSource), aSelector, NO, YES);
-    if (dataSourceMethod.name != nil && [_realDataSource methodSignatureForSelector:aSelector])
-        return [_realDataSource methodSignatureForSelector:aSelector];
+    if (dataSourceMethod.name != nil && [(NSObject*)_realDataSource methodSignatureForSelector:aSelector])
+        return [(NSObject*)_realDataSource methodSignatureForSelector:aSelector];
     
     struct objc_method_description delegateMethod = protocol_getMethodDescription(@protocol(UITableViewDelegate), aSelector, NO, YES);
-    if (delegateMethod.name != nil && [_realDelegate methodSignatureForSelector:aSelector])
-        return [_realDelegate methodSignatureForSelector:aSelector];
+    if (delegateMethod.name != nil && [(NSObject*)_realDelegate methodSignatureForSelector:aSelector])
+        return [(NSObject*)_realDelegate methodSignatureForSelector:aSelector];
     
     return nil;
 }
@@ -197,6 +197,10 @@
     [super setDelegate:self];
 }
 
+-(id<UITableViewDataSource>) dataSource {
+    return self.realDataSource;
+}
+
 -(void) setDataSource:(id<UITableViewDataSource>)dataSource {
     self.realDataSource = dataSource;
     self.dataSourceIsSelf = dataSource == self;
@@ -213,8 +217,8 @@
     {
         // A little trick here. This method is usually called from a UIScrollView delegate method, which is taking place
         // on the UI event tracking run loop mode. This means any UI animation stuff we try to do here may get skipped. But, 
-        // if we dispatch async to the current queue we will pick up the NEXT run loop, which will be in default mode, and
-        // so these animations will go through fine.
+        // if we dispatch async to the current queue we will pick up the NEXT default run loop, and so these animations 
+        // will go through fine.
         dispatch_async(dispatch_get_current_queue(), ^{
             
             // allow for overflow elasticity in the scroll view
