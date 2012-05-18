@@ -106,6 +106,10 @@
 -(void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     [self snapScrolling];
     
+    // when using UIScrollView paging also call the didSnapToIndexPath delegate method.
+    if (! self.snapToRows && self.pagingEnabled && [self.realDelegate respondsToSelector:@selector(tableView:didSnapToIndexPath:)])
+        [self.realDelegate tableView:self didSnapToIndexPath:[[self indexPathsForVisibleRows] lastObject]];
+    
     // pass message to the delegate
     if (! _delegateIsSelf && [self.realDelegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)])
         [self.realDelegate scrollViewDidEndDecelerating:scrollView];

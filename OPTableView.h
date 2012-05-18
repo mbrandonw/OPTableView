@@ -27,15 +27,19 @@
 @optional
 
 /**
- Delegate methods called just before and right after the table view has snapped to an index path.
+ Called just before the table view snaps to a row. Called only when snapsToRows = YES.
  */
 -(void) tableView:(OPTableView*)tableView willSnapToIndexPath:(NSIndexPath*)indexPath;
+
+/**
+ Called just after the table view snaps to a row. Called only when snapsToRows = YES or pagingEnabled = YES.
+ */
 -(void) tableView:(OPTableView*)tableView didSnapToIndexPath:(NSIndexPath*)indexPath;
 
 /**
  This delegate methods passes you the index path it is about to snap to, and you return the index path
  it should snap to. If you don't implement this method it will snap to the default index path. If you 
- return nil then the table view will scroll freely.
+ return nil then the table view will scroll freely. Only works when snapsToRows = YES.
  */
 -(NSIndexPath*) tableView:(UITableView *)tableView shouldSnapToIndexPath:(NSIndexPath*)indexPath;
 @end
