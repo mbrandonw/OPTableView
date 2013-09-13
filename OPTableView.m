@@ -223,7 +223,7 @@
         // on the UI event tracking run loop mode. This means any UI animation stuff we try to do here may get skipped. But, 
         // if we dispatch async to the current queue we will pick up the NEXT default run loop, and so these animations 
         // will go through fine.
-        dispatch_async(dispatch_get_current_queue(), ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
             
             // allow for overflow elasticity in the scroll view
             if (self.contentOffset.y < 0.0f)
