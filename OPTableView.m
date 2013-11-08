@@ -55,6 +55,11 @@
     return self;
 }
 
+-(void) dealloc {
+  self.delegate = nil;
+  self.dataSource = nil;
+}
+
 -(void) setHorizontal:(BOOL)horizontal {
     _horizontal = horizontal;
     
